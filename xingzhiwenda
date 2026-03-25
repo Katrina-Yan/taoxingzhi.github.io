@@ -1,0 +1,891 @@
+<html lang="zh-CN"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>陶行知先生智能问答系统</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <!-- 自定义Tailwind配置 -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#1a56db',
+                        secondary: '#4f46e5',
+                        accent: '#3b82f6',
+                        light: '#eff6ff',
+                        dark: '#1e3a8a'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                    backgroundImage: {
+                        'hero-pattern': "linear-gradient(rgba(59, 130, 246, 0.8), rgba(30, 58, 138, 0.9))",
+                    }
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .text-shadow {
+                text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            }
+            .bg-blur {
+                backdrop-filter: blur(8px);
+            }
+            .transition-all-300 {
+                transition: all 300ms ease-in-out;
+            }
+        }
+    </style>
+    <style>
+        body {
+            background-image: url('https://p3-doubao-search-sign.byteimg.com/labis/a7b954fb159684ced8edd5c3a86c5d78~tplv-be4g95zd3a-image.jpeg?lk3s=feb11e32&x-expires=1789972064&x-signature=APTK5p2aDKPtEZnC2GfXRNw%2FPS0%3D');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            background-repeat: no-repeat;
+        }
+        
+        .chat-container {
+            max-height: 60vh;
+            overflow-y: auto;
+            scroll-behavior: smooth;
+        }
+        
+        .chat-message {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .typing-indicator {
+            display: inline-flex;
+            align-items: center;
+        }
+        
+        .typing-indicator span {
+            height: 8px;
+            width: 8px;
+            margin: 0 1px;
+            background-color: #3b82f6;
+            border-radius: 50%;
+            display: inline-block;
+            animation: bounce 1.4s infinite ease-in-out both;
+        }
+        
+        .typing-indicator span:nth-child(1) {
+            animation-delay: -0.32s;
+        }
+        
+        .typing-indicator span:nth-child(2) {
+            animation-delay: -0.16s;
+        }
+        
+        @keyframes bounce {
+            0%, 80%, 100% {
+                transform: scale(0);
+            }
+            40% {
+                transform: scale(1);
+            }
+        }
+        
+        .quote-card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .quote-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px -5px rgba(59, 130, 246, 0.5);
+        }
+        
+        .nav-link {
+            position: relative;
+        }
+        
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            bottom: -2px;
+            left: 0;
+            background-color: #3b82f6;
+            transition: width 0.3s ease;
+        }
+        
+        .nav-link:hover::after {
+            width: 100%;
+        }
+        
+        .avatar-container {
+            position: relative;
+            overflow: hidden;
+            border-radius: 50%;
+            box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.3);
+            transition: transform 0.3s ease;
+        }
+        
+        .avatar-container:hover {
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+<body class="min-h-screen font-sans text-gray-100">
+    <!-- 导航栏 -->
+    <nav class="bg-dark bg-opacity-90 backdrop-blur-md shadow-lg sticky top-0 z-50">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <div class="w-10 h-10 rounded-full overflow-hidden border-2 border-white">
+                    <img src="https://p3-doubao-search-sign.byteimg.com/labis/a7b954fb159684ced8edd5c3a86c5d78~tplv-be4g95zd3a-image.jpeg?lk3s=feb11e32&amp;x-expires=1789972064&amp;x-signature=APTK5p2aDKPtEZnC2GfXRNw%2FPS0%3D" alt="陶行知先生" class="w-full h-full object-cover">
+                </div>
+                <span class="text-xl font-bold text-white">陶行知先生智能问答</span>
+            </div>
+            <div class="hidden md:flex space-x-8">
+                <a href="#" class="nav-link text-white hover:text-blue-300 transition-all-300">首页</a>
+                <a href="#about" class="nav-link text-white hover:text-blue-300 transition-all-300">关于陶行知</a>
+                <a href="#quotes" class="nav-link text-white hover:text-blue-300 transition-all-300">教育名言</a>
+                <a href="#resources" class="nav-link text-white hover:text-blue-300 transition-all-300">相关资源</a>
+            </div>
+            <div class="md:hidden">
+                <button id="mobile-menu-button" class="text-white focus:outline-none">
+                    <i class="fa fa-bars text-xl"></i>
+                </button>
+            </div>
+        </div>
+        <!-- 移动端菜单 -->
+        <div id="mobile-menu" class="hidden md:hidden bg-dark bg-opacity-95 backdrop-blur-md">
+            <div class="container mx-auto px-4 py-2 flex flex-col space-y-3">
+                <a href="#" class="py-2 text-white hover:text-blue-300 transition-all-300">首页</a>
+                <a href="#about" class="py-2 text-white hover:text-blue-300 transition-all-300">关于陶行知</a>
+                <a href="#quotes" class="py-2 text-white hover:text-blue-300 transition-all-300">教育名言</a>
+                <a href="#resources" class="py-2 text-white hover:text-blue-300 transition-all-300">相关资源</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 主要内容 -->
+    <main class="container mx-auto px-4 py-8">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- 左侧信息区 -->
+            <div class="lg:col-span-1">
+                <div class="bg-dark bg-opacity-80 backdrop-blur-md rounded-xl shadow-xl p-6 mb-6">
+                    <div class="flex flex-col items-center mb-6">
+                        <div class="avatar-container w-32 h-32 mb-4">
+                            <img src="https://p3-doubao-search-sign.byteimg.com/labis/a7b954fb159684ced8edd5c3a86c5d78~tplv-be4g95zd3a-image.jpeg?lk3s=feb11e32&amp;x-expires=1789972064&amp;x-signature=APTK5p2aDKPtEZnC2GfXRNw%2FPS0%3D" alt="陶行知先生" class="w-full h-full object-cover">
+                        </div>
+                        <h2 class="text-2xl font-bold text-center text-white">陶行知先生</h2>
+                        <p class="text-blue-300 text-center mt-1">人民教育家</p>
+                    </div>
+                    <div class="space-y-4">
+                        <p class="text-gray-300">
+                            <i class="fa fa-calendar text-blue-400 mr-2"></i>
+                            1891年10月18日 - 1946年7月25日
+                        </p>
+                        <p class="text-gray-300">
+                            <i class="fa fa-map-marker text-blue-400 mr-2"></i>
+                            安徽省歙县
+                        </p>
+                        <p class="text-gray-300">
+                            <i class="fa fa-graduation-cap text-blue-400 mr-2"></i>
+                            中国人民教育家、教育思想家
+                        </p>
+                        <p class="text-gray-300">
+                            <i class="fa fa-book text-blue-400 mr-2"></i>
+                            创办晓庄师范、育才学校、社会大学
+                        </p>
+                    </div>
+                </div>
+
+                <!-- 教育思想简介 -->
+                <div class="bg-dark bg-opacity-80 backdrop-blur-md rounded-xl shadow-xl p-6">
+                    <h3 class="text-xl font-bold mb-4 text-white flex items-center">
+                        <i class="fa fa-lightbulb-o text-yellow-400 mr-2"></i>
+                        教育思想核心
+                    </h3>
+                    <ul class="space-y-3">
+                        <li class="flex items-start">
+                            <div class="bg-blue-600 rounded-full p-1 mr-3 mt-1">
+                                <i class="fa fa-check text-xs text-white"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-blue-300">生活即教育</h4>
+                                <p class="text-gray-300 text-sm">教育与生活是同一过程，教育要通过生活来进行</p>
+                            </div>
+                        </li>
+                        <li class="flex items-start">
+                            <div class="bg-blue-600 rounded-full p-1 mr-3 mt-1">
+                                <i class="fa fa-check text-xs text-white"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-blue-300">社会即学校</h4>
+                                <p class="text-gray-300 text-sm">扩大教育的范围，让整个社会都成为教育的场所</p>
+                            </div>
+                        </li>
+                        <li class="flex items-start">
+                            <div class="bg-blue-600 rounded-full p-1 mr-3 mt-1">
+                                <i class="fa fa-check text-xs text-white"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-blue-300">教学做合一</h4>
+                                <p class="text-gray-300 text-sm">事怎样做便怎样学，怎样学便怎样教，教与学都以做为中心</p>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- 右侧聊天区 -->
+            <div class="lg:col-span-2">
+                <div class="bg-dark bg-opacity-80 backdrop-blur-md rounded-xl shadow-xl p-6">
+                    <h3 class="text-xl font-bold mb-6 text-white flex items-center">
+                        <i class="fa fa-comments text-blue-400 mr-2"></i>
+                        与陶行知先生对话
+                    </h3>
+                    
+                    <!-- 聊天记录 -->
+                    <div id="chat-container" class="chat-container mb-6 space-y-4">
+                        <!-- 欢迎消息 -->
+                        <div class="chat-message flex items-start">
+                            <div class="w-10 h-10 rounded-full overflow-hidden mr-3 flex-shrink-0">
+                                <img src="https://p3-doubao-search-sign.byteimg.com/labis/a7b954fb159684ced8edd5c3a86c5d78~tplv-be4g95zd3a-image.jpeg?lk3s=feb11e32&amp;x-expires=1789972064&amp;x-signature=APTK5p2aDKPtEZnC2GfXRNw%2FPS0%3D" alt="陶行知先生" class="w-full h-full object-cover">
+                            </div>
+                            <div class="bg-blue-900 bg-opacity-60 rounded-lg p-4 max-w-[80%]">
+                                <p class="text-white font-medium mb-1">陶行知先生</p>
+                                <p class="text-gray-200">
+                                    您好，我是陶行知。"捧着一颗心来，不带半根草去"是我的教育信念。作为一名师范生，你有什么关于教育的问题想要与我探讨吗？我很乐意分享我的教育理念和实践经验。
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 输入区域 -->
+                    <div class="flex">
+                        <input type="text" id="user-input" class="flex-1 bg-blue-900 bg-opacity-40 border border-blue-700 rounded-l-lg px-4 py-3 text-white placeholder-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="请输入您的问题...">
+                        <button id="send-button" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-r-lg transition-all-300 flex items-center justify-center">
+                            <i class="fa fa-paper-plane mr-2"></i>
+                            发送
+                        </button>
+                    </div>
+                    
+                    <!-- 提示问题 -->
+                    <div class="mt-6">
+                        <p class="text-sm text-blue-300 mb-2">您可以尝试问这些问题：</p>
+                        <div class="flex flex-wrap gap-2">
+                            <button class="suggestion-btn bg-blue-800 bg-opacity-50 hover:bg-opacity-70 text-blue-200 text-sm px-3 py-1 rounded-full transition-all-300">
+                                什么是"生活即教育"？
+                            </button>
+                            <button class="suggestion-btn bg-blue-800 bg-opacity-50 hover:bg-opacity-70 text-blue-200 text-sm px-3 py-1 rounded-full transition-all-300">
+                                如何成为一名好老师？
+                            </button>
+                            <button class="suggestion-btn bg-blue-800 bg-opacity-50 hover:bg-opacity-70 text-blue-200 text-sm px-3 py-1 rounded-full transition-all-300">
+                                您创办晓庄师范的初衷是什么？
+                            </button>
+                            <button class="suggestion-btn bg-blue-800 bg-opacity-50 hover:bg-opacity-70 text-blue-200 text-sm px-3 py-1 rounded-full transition-all-300">
+                                "教学做合一"该如何实践？
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 关于陶行知 -->
+        <section id="about" class="mt-12">
+            <div class="bg-dark bg-opacity-80 backdrop-blur-md rounded-xl shadow-xl p-8">
+                <h2 class="text-2xl font-bold mb-6 text-white flex items-center">
+                    <i class="fa fa-user-circle text-blue-400 mr-3"></i>
+                    关于陶行知先生
+                </h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div>
+                        <h3 class="text-xl font-semibold mb-4 text-blue-300">生平简介</h3>
+                        <p class="text-gray-300 mb-4">
+                            陶行知（1891年10月18日－1946年7月25日），原名文濬，字世昌，后改名陶知行、陶行知，安徽省歙县人，中国人民教育家、教育思想家，中国民主同盟和中国人民救国会的主要领导人之一。
+                        </p>
+                        <p class="text-gray-300 mb-4">
+                            1914年毕业于金陵大学后赴美留学，1917年回国，历任南京高等师范学校教授、教务主任，1921年任东南大学教授、系主任，1922年兼任中华教育改进社主任干事，1923年任南京安徽公学校长等职。
+                        </p>
+                        <p class="text-gray-300">
+                            1927年创办晓庄师范；1932年成立"中国普及教育助成会"，开展"即知即传"的普及教育运动；1934年主编《生活教育》半月刊；1939年7月在四川重庆创办育才学校；1945年陶行知当选为中国民主同盟中央常委兼教育委员会主任委员。1946年1月，陶行知在重庆创办社会大学，推行民主教育。
+                        </p>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-semibold mb-4 text-blue-300">教育贡献</h3>
+                        <ul class="space-y-3">
+                            <li class="flex items-start">
+                                <div class="bg-blue-600 rounded-full p-1 mr-3 mt-1">
+                                    <i class="fa fa-check text-xs text-white"></i>
+                                </div>
+                                <p class="text-gray-300">
+                                    创立了以"生活即教育"、"社会即学校"、"教学做合一"等为中心内容的生活教育理论
+                                </p>
+                            </li>
+                            <li class="flex items-start">
+                                <div class="bg-blue-600 rounded-full p-1 mr-3 mt-1">
+                                    <i class="fa fa-check text-xs text-white"></i>
+                                </div>
+                                <p class="text-gray-300">
+                                    倡导"小先生制"，推动平民教育运动，致力于让更多人获得教育机会
+                                </p>
+                            </li>
+                            <li class="flex items-start">
+                                <div class="bg-blue-600 rounded-full p-1 mr-3 mt-1">
+                                    <i class="fa fa-check text-xs text-white"></i>
+                                </div>
+                                <p class="text-gray-300">
+                                    创办晓庄师范、育才学校、社会大学等，实践其教育理念
+                                </p>
+                            </li>
+                            <li class="flex items-start">
+                                <div class="bg-blue-600 rounded-full p-1 mr-3 mt-1">
+                                    <i class="fa fa-check text-xs text-white"></i>
+                                </div>
+                                <p class="text-gray-300">
+                                    提出"千教万教教人求真，千学万学学做真人"的教育目标
+                                </p>
+                            </li>
+                            <li class="flex items-start">
+                                <div class="bg-blue-600 rounded-full p-1 mr-3 mt-1">
+                                    <i class="fa fa-check text-xs text-white"></i>
+                                </div>
+                                <p class="text-gray-300">
+                                    强调教育与生活、社会的紧密结合，注重培养学生的实践能力和创新精神
+                                </p>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 教育名言 -->
+        <section id="quotes" class="mt-12">
+            <div class="bg-dark bg-opacity-80 backdrop-blur-md rounded-xl shadow-xl p-8">
+                <h2 class="text-2xl font-bold mb-6 text-white flex items-center">
+                    <i class="fa fa-quote-left text-blue-400 mr-3"></i>
+                    陶行知教育名言
+                </h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- 名言卡片 -->
+                    <div class="quote-card bg-blue-900 bg-opacity-40 rounded-lg p-6 border-l-4 border-blue-500">
+                        <p class="text-gray-200 italic mb-4">
+                            "捧着一颗心来，不带半根草去。"
+                        </p>
+                        <p class="text-right text-blue-300">— 陶行知</p>
+                    </div>
+                    <div class="quote-card bg-blue-900 bg-opacity-40 rounded-lg p-6 border-l-4 border-blue-500">
+                        <p class="text-gray-200 italic mb-4">
+                            "千教万教教人求真，千学万学学做真人。"
+                        </p>
+                        <p class="text-right text-blue-300">— 陶行知</p>
+                    </div>
+                    <div class="quote-card bg-blue-900 bg-opacity-40 rounded-lg p-6 border-l-4 border-blue-500">
+                        <p class="text-gray-200 italic mb-4">
+                            "行是知之始，知是行之成。"
+                        </p>
+                        <p class="text-right text-blue-300">— 陶行知</p>
+                    </div>
+                    <div class="quote-card bg-blue-900 bg-opacity-40 rounded-lg p-6 border-l-4 border-blue-500">
+                        <p class="text-gray-200 italic mb-4">
+                            "生活即教育，社会即学校，教学做合一。"
+                        </p>
+                        <p class="text-right text-blue-300">— 陶行知</p>
+                    </div>
+                    <div class="quote-card bg-blue-900 bg-opacity-40 rounded-lg p-6 border-l-4 border-blue-500">
+                        <p class="text-gray-200 italic mb-4">
+                            "我们要活的书，不要死的书；要真的书，不要假的书；要动的书，不要静的书；要用的书，不要读的书。"
+                        </p>
+                        <p class="text-right text-blue-300">— 陶行知</p>
+                    </div>
+                    <div class="quote-card bg-blue-900 bg-opacity-40 rounded-lg p-6 border-l-4 border-blue-500">
+                        <p class="text-gray-200 italic mb-4">
+                            "教育不能创造什么，但它能启发儿童创造力以从事于创造工作。"
+                        </p>
+                        <p class="text-right text-blue-300">— 陶行知</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 相关资源 -->
+        <section id="resources" class="mt-12">
+            <div class="bg-dark bg-opacity-80 backdrop-blur-md rounded-xl shadow-xl p-8">
+                <h2 class="text-2xl font-bold mb-6 text-white flex items-center">
+                    <i class="fa fa-book text-blue-400 mr-3"></i>
+                    相关资源
+                </h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- 资源卡片 -->
+                    <a href="http://www.taoxingzhi.org" target="_blank" class="bg-blue-900 bg-opacity-40 hover:bg-opacity-60 rounded-lg p-6 transition-all-300 flex items-start">
+                        <div class="bg-blue-600 rounded-full p-3 mr-4">
+                            <i class="fa fa-globe text-white text-xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-semibold text-white mb-2">中国陶行知研究会官网</h3>
+                            <p class="text-gray-300 text-sm">提供陶行知教育思想、研究会动态、学术资源等内容，是权威信息发布平台。</p>
+                        </div>
+                    </a>
+                    <a href="https://www.jstyh.com/" target="_blank" class="bg-blue-900 bg-opacity-40 hover:bg-opacity-60 rounded-lg p-6 transition-all-300 flex items-start">
+                        <div class="bg-blue-600 rounded-full p-3 mr-4">
+                            <i class="fa fa-university text-white text-xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-semibold text-white mb-2">江苏省陶行知研究会</h3>
+                            <p class="text-gray-300 text-sm">江苏省地方性陶研组织网站，包含友情链接、活动通知等。</p>
+                        </div>
+                    </a>
+                    <a href="https://tyy.njxzc.edu.cn/" target="_blank" class="bg-blue-900 bg-opacity-40 hover:bg-opacity-60 rounded-lg p-6 transition-all-300 flex items-start">
+                        <div class="bg-blue-600 rounded-full p-3 mr-4">
+                            <i class="fa fa-graduation-cap text-white text-xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-semibold text-white mb-2">南京晓庄学院陶行知研究院</h3>
+                            <p class="text-gray-300 text-sm">依托南京晓庄学院（陶行知创办）设立，聚焦学术研究、纪念馆及《生活教育》杂志。</p>
+                        </div>
+                    </a>
+                    <a href="https://www.njxzc.edu.cn/" target="_blank" class="bg-blue-900 bg-opacity-40 hover:bg-opacity-60 rounded-lg p-6 transition-all-300 flex items-start">
+                        <div class="bg-blue-600 rounded-full p-3 mr-4">
+                            <i class="fa fa-building text-white text-xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-semibold text-white mb-2">南京晓庄学院</h3>
+                            <p class="text-gray-300 text-sm">由陶行知先生创办的晓庄试验乡村师范发展而来，是一所全日制公办本科院校。</p>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- 页脚 -->
+    <footer class="bg-dark bg-opacity-90 backdrop-blur-md mt-12 py-8">
+        <div class="container mx-auto px-4">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="mb-4 md:mb-0">
+                    <h3 class="text-xl font-bold text-white mb-2">陶行知先生智能问答系统</h3>
+                    <p class="text-gray-400">传承陶行知教育思想，服务师范生成长</p>
+                </div>
+                <div class="flex space-x-6">
+                    <a href="#" class="text-gray-400 hover:text-white transition-all-300">
+                        <i class="fa fa-weixin text-2xl"></i>
+                    </a>
+                    <a href="#" class="text-gray-400 hover:text-white transition-all-300">
+                        <i class="fa fa-weibo text-2xl"></i>
+                    </a>
+                    <a href="#" class="text-gray-400 hover:text-white transition-all-300">
+                        <i class="fa fa-envelope text-2xl"></i>
+                    </a>
+                </div>
+            </div>
+            <div class="border-t border-gray-700 mt-6 pt-6 text-center">
+                <p class="text-gray-400">© 2026 陶行知先生智能问答系统 | 南京晓庄学院</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript -->
+    <script>
+        // 移动端菜单切换
+        document.getElementById('mobile-menu-button').addEventListener('click', function() {
+            const mobileMenu = document.getElementById('mobile-menu');
+            mobileMenu.classList.toggle('hidden');
+        });
+
+        // 平滑滚动
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function(e) {
+                e.preventDefault();
+                const targetId = this.getAttribute('href');
+                if (targetId === '#') return;
+                
+                const targetElement = document.querySelector(targetId);
+                if (targetElement) {
+                    window.scrollTo({
+                        top: targetElement.offsetTop - 80,
+                        behavior: 'smooth'
+                    });
+                    
+                    // 如果是移动端，点击后关闭菜单
+                    const mobileMenu = document.getElementById('mobile-menu');
+                    if (!mobileMenu.classList.contains('hidden')) {
+                        mobileMenu.classList.add('hidden');
+                    }
+                }
+            });
+        });
+
+        // 聊天功能
+        const chatContainer = document.getElementById('chat-container');
+        const userInput = document.getElementById('user-input');
+        const sendButton = document.getElementById('send-button');
+        const suggestionButtons = document.querySelectorAll('.suggestion-btn');
+
+        // 预设问答数据
+        const qaDatabase = [
+            {
+                keywords: ['生活即教育', '什么是生活即教育', '生活教育'],
+                answer: `
+                    "生活即教育"是我教育思想的核心主张之一。我认为：
+
+                    1. 教育与生活是同一过程，教育要通过生活来进行，整个的生活要有整个的教育。
+
+                    2. 教育的目的、内容、原则、方法均由生活决定；教育要通过生活来进行。
+
+                    3. 生活是发展的，教育也应随时代的前进而不断发展。
+
+                    4. "生活即教育"其本质是生活决定教育，教育改造生活。
+
+                    这与传统教育将教育与生活分离的做法截然不同。我主张把教育与生活完全熔于一炉，让学生在生活中学习，在学习中生活。
+                `
+            },
+            {
+                keywords: ['社会即学校', '社会学校'],
+                answer: `
+                    "社会即学校"是我生活教育理论的重要组成部分。我提出这一主张的原因和内涵是：
+
+                    1. 在"学校即社会"的主张下，学校里的东西太少，不如反过来主张"社会即学校"，让教育的材料、方法、工具、环境都大大增加。
+
+                    2. "社会即学校"是与"生活即教育"紧密相联的，是"生活即教育"同一意义的不同说明。
+
+                    3. 这一主张扩大了教育的范围，让整个社会都成为教育的场所，使教育与社会生活更加紧密结合。
+
+                    4. 它打破了传统学校的围墙，让学生接触社会，了解社会，服务社会，在社会实践中学习和成长。
+
+                    当然，"社会即学校"并不是要取消学校，而是要使学校与社会生活息息相通，使学校成为社会生活的一部分。
+                `
+            },
+            {
+                keywords: ['教学做合一', '如何实践教学做合一', '教学做'],
+                answer: `
+                    "教学做合一"是我生活教育理论的教学论，也是我的认识论。其内涵包括：
+
+                    1. "教学做是一件事，不是三件事。我们要在做上教，在做上学。"
+
+                    2. "事怎样做便怎样学，怎样学便怎样教。教而不做，不能算是教；学而不做，不能算是学。教与学都以做为中心。"
+
+                    3. 我特别强调要亲自在"做"的活动中获得知识，认为实践是理论的源泉，理论是实践的总结与指导。
+
+                    在实践中，我是这样推行"教学做合一"的：
+
+                    1. 在晓庄师范，我将教学活动分成文学、教育、农艺、美术、科学、政治、乡村建设、医药卫生等各种小组，让学生在实践中学习。
+
+                    2. 所有校务，无论大小，全由学生轮流担任，从饮食卫生到接待客人、防卫校园，都是学生实践学习的机会。
+
+                    3. 我主张"在劳力上劳心"，反对"劳心者治人，劳力者治于人"的传统观念，认为真正的学问应该从劳力与劳心的结合中获得。
+
+                    对于现代教育工作者，"教学做合一"仍然具有重要的指导意义，它提醒我们教育不能脱离实践，不能脱离生活，要让学生在实践中学习，在体验中成长。
+                `
+            },
+            {
+                keywords: ['好老师', '如何成为好老师', '怎样做一个好老师'],
+                answer: `
+                    关于如何成为一名好老师，我有以下几点建议：
+
+                    1. 要有"爱满天下"的情怀。教师要热爱学生，热爱教育事业，"捧着一颗心来，不带半根草去"。
+
+                    2. 要"教学做合一"。教师不仅要会教，还要会做，要在做上教，在做上学。教师应该是行动者，而不仅仅是知识的传授者。
+
+                    3. 要"以教人者教己"。教师要不断学习，不断提高自己，做到教学相长。
+
+                    4. 要培养学生的创造力。"教育不能创造什么，但它能启发儿童创造力以从事于创造工作。"
+
+                    5. 要注重学生的道德教育。我认为，道德是做人的根本。根本一坏，纵然有一些学问和本领，也无甚用处。
+
+                    6. 要平等对待每一位学生，尊重学生的个性差异，因材施教。
+
+                    7. 要与学生建立良好的师生关系，做学生的良师益友。
+
+                    8. 要关注学生的全面发展，而不仅仅是学业成绩。
+
+                    总之，好老师应该是一个有爱心、有责任心、有专业素养、不断学习和创新的教育工作者。
+                `
+            },
+            {
+                keywords: ['晓庄师范', '创办晓庄师范', '晓庄师范的初衷'],
+                answer: `
+                    我创办晓庄师范的初衷，源于我对中国教育现状的深刻反思和对乡村教育的执着追求：
+
+                    1. 我认为中国教育改造的根本问题在农村。当时的中国，农村人口占绝大多数，但农村教育却极度落后。
+
+                    2. 我立下宏愿，要"筹措100万元基金，征集100万位同志，提倡开设100万所学校，改造100万个乡村"。
+
+                    3. 我主张"到民间去"，到农村去，为农民办教育，培养适合农村需要的教师和人才。
+
+                    4. 1926年，我在《中国乡村教育之根本改造》一文中明确提出："乡村学校是今日中国改造乡村生活之唯一可能的中心"。
+
+                    5. 晓庄师范的创办，是我"生活教育"理论的第一次大规模实践。我希望通过晓庄师范，培养一批能够"化农民"又能"农民化"的教师。
+
+                    在晓庄师范，我们实行"教学做合一"的原则，师生一起开荒，一起建茅屋，一起劳动，一起学习。学校不仅教授文化知识，还教授农业生产、乡村建设等实用技能。
+
+                    晓庄师范虽然只存在了三年就被国民党政府查封，但它的影响深远，它开创了中国乡村教育的新路子，培养了一大批优秀的乡村教师和教育工作者。
+                `
+            },
+            {
+                keywords: ['小先生制', '小先生', '小先生制度'],
+                answer: `
+                    "小先生制"是我在普及教育实践中创造的一种教育组织形式，其主要内容和意义包括：
+
+                    1. "小先生制"的核心是"即知即传"，让已经识字的儿童教不识字的儿童或成人，使知识得以迅速传播。
+
+                    2. 我提出"小孩也能做大事"的主张，认为儿童不仅是教育的对象，也可以成为教育的主体和传播者。
+
+                    3. "小先生制"打破了传统教育中教师与学生的严格界限，体现了"教学做合一"的教育理念。
+
+                    4. 这一制度特别适合当时中国的国情，它解决了师资不足、教育资源匮乏的问题，加速了普及教育的进程。
+
+                    5. 我曾在山海工学团大力推行"小先生制"，组织"山海小先生总动员大会"，让儿童参与到普及教育的工作中来。
+
+                    6. "小先生制"还培养了儿童的责任感、组织能力和表达能力，促进了儿童的全面发展。
+
+                    即使在今天，"小先生制"仍然具有重要的现实意义，它提醒我们要充分发挥学生的主体作用，要重视同伴教育的力量，要让教育成为一种互动的、共同成长的过程。
+                `
+            },
+            {
+                keywords: ['生活教育理论', '生活教育', '教育理论'],
+                answer: `
+                    我的生活教育理论是一个完整的教育思想体系，其核心内容包括：
+
+                    1. "生活即教育"：教育与生活是同一过程，教育要通过生活来进行，整个的生活要有整个的教育。教育的目的、内容、原则、方法均由生活决定；教育要通过生活来进行；生活是发展的，教育也应随时代的前进而不断发展。
+
+                    2. "社会即学校"：扩大教育的范围，让整个社会都成为教育的场所，使教育的材料、方法、工具、环境都大大增加。这一主张打破了传统学校的围墙，让学生接触社会，了解社会，服务社会。
+
+                    3. "教学做合一"："教学做是一件事，不是三件事。我们要在做上教，在做上学。""事怎样做便怎样学，怎样学便怎样教。教而不做，不能算是教；学而不做，不能算是学。教与学都以做为中心。"
+
+                    4. "在劳力上劳心"：我提出"以教人者教己，在劳力上劳心"的口号，反对"劳心者治人，劳力者治于人"的传统观念，认为真正的学问应该从劳力与劳心的结合中获得。
+
+                    5. "创造的教育"：我强调"敢探未发明的新理，敢入未开化的边疆"的创造精神，认为教育的目的是培养创造力，而不仅仅是传授知识。
+
+                    6. "千教万教教人求真，千学万学学做真人"：这是我对教育目标的概括，强调教育不仅要传授知识，更要培养真人，培养具有真才实学、真实品格的人。
+
+                    生活教育理论是我在长期的教育实践中形成的，它立足于中国的实际情况，针对中国教育的弊病，提出了一套全新的教育理念和方法，对中国现代教育的发展产生了深远的影响。
+                `
+            },
+            {
+                keywords: ['育才学校', '创办育才学校'],
+                answer: `
+                    育才学校是我在抗日战争期间创办的一所特殊学校，它的创办背景和特点如下：
+
+                    1. 1939年7月，我在四川重庆创办了育才学校。当时正值抗日战争时期，许多儿童因战争而失学，特别是一些有特殊才能的儿童无法得到良好的教育。
+
+                    2. 创办育才学校的目的，是为了培养有特殊才能的儿童，使他们能够在艰苦的战争环境中得到良好的教育，将来为国家和民族的复兴贡献力量。
+
+                    3. 育才学校的招生对象主要是战区难童中具有特殊才能的儿童，包括音乐、美术、文学、戏剧、自然科学等方面的人才幼苗。
+
+                    4. 在育才学校，我继续实践"生活教育"理论，推行"教学做合一"的原则，强调"在劳力上劳心"，注重培养学生的实践能力和创造精神。
+
+                    5. 学校不仅教授文化知识和专业技能，还注重学生的道德教育和品格培养，强调"千教万教教人求真，千学万学学做真人"。
+
+                    6. 我倡导学习"南泥湾精神"，带领师生开荒30亩，建立了育才农场，通过劳动教育培养学生的劳动观念和实践能力。
+
+                    7. 育才学校虽然条件艰苦，但培养了一大批优秀的人才，他们在后来的国家建设和社会发展中发挥了重要作用。
+
+                    育才学校是我教育思想的又一次重要实践，它体现了我对教育的热爱和对国家、民族的责任感，也展示了我在特殊历史条件下的教育创新精神。
+                `
+            },
+            {
+                keywords: ['四块糖的故事', '四块糖', '教育故事'],
+                answer: `
+                    "四块糖的故事"是我在教育实践中的一个经典案例，它体现了我的教育理念和方法：
+
+                    有一次，我在校园里看到一名同学用小石块砸同学，便当即制止，并让他放学后到校长室谈话。放学后，这名同学来到校长室准备挨训。见面后，我却掏出一块糖给他说："这奖给你，因为你按时到这里来。"该同学犹豫地接过糖。
+
+                    我又掏出第二块糖放到他手里说："这块糖又是奖给你的，因为我叫你不打人，你马上停止了，这说明你很尊重我。"
+
+                    接着，我掏出第三块糖给他说："调查过了，你用小石块砸那个同学，是因为他不守游戏规则，欺负女同学。"这名同学立刻流下了悔恨的泪说："陶校长，你打我两下吧！我错了，我砸的不是坏人，而是自己的同学呀。"
+
+                    我满意地笑了，掏出第四块糖递过去说："为你正确认识自己错误，再奖励你一块！我的糖发完了，我们的谈话也完了。"
+
+                    这个故事体现了我以下的教育理念：
+
+                    1. 尊重学生：我尊重学生的人格，没有当众批评他，而是私下谈话。
+
+                    2. 赏识教育：我善于发现学生的优点和进步，并及时给予肯定和鼓励。
+
+                    3. 循循善诱：我没有直接批评学生，而是通过引导让学生自己认识到错误。
+
+                    4. 注重学生的道德教育：我认为，道德是做人的根本，教育的首要任务是培养学生的良好品德。
+
+                    5. 以学生为中心：我注重学生的自我教育和自我反思，而不是简单的灌输和批评。
+
+                    这个故事至今仍然被广泛传颂，它为我们今天的教育工作提供了宝贵的启示。
+                `
+            },
+            {
+                keywords: ['南京晓庄学院', '晓庄学院', '晓庄'],
+                answer: `
+                    南京晓庄学院的前身是我于1927年创办的晓庄试验乡村师范，这是中国近代教育史上第一所乡村师范学校。关于晓庄学院的历史和发展，我可以简要介绍：
+
+                    1. 1927年3月，我在南京北郊的小庄（后改名为晓庄）创办了晓庄试验乡村师范，这是我"生活教育"理论的第一次大规模实践。
+
+                    2. 晓庄师范实行"教学做合一"的原则，师生一起开荒，一起建茅屋，一起劳动，一起学习。学校不仅教授文化知识，还教授农业生产、乡村建设等实用技能。
+
+                    3. 1930年，晓庄师范因支持进步学生运动被国民党政府查封。
+
+                    4. 新中国成立后，在党和政府的关怀下，晓庄师范得以恢复和发展。
+
+                    5. 2000年3月，经教育部批准，由原南京师范专科学校、南京教育学院、南京市晓庄师范学校合并组建成为全日制公办本科院校——南京晓庄学院。
+
+                    6. 今天的南京晓庄学院继承和发扬了我当年的教育思想，坚持"教学做合一"的校训，秉承"教人求真，学做真人"的校风，已发展成为一所以教师教育为特色的综合性本科院校。
+
+                    7. 学校现拥有"两区一园三附校"，即方山、莫愁两个校区、一个省级文保单位"行知园"（陶行知纪念馆）和附属南京实验国际学校、附属小学以及附属南京小红叶幼儿园。
+
+                    作为晓庄学院的创始人，我对学校的发展感到欣慰。希望晓庄学院能够继续传承和弘扬"生活教育"思想，为国家培养更多优秀的教育工作者和建设人才。
+                `
+            }
+        ];
+
+        // 添加用户消息到聊天界面
+        function addUserMessage(message) {
+            const userMessageHTML = `
+                <div class="chat-message flex items-start justify-end">
+                    <div class="bg-blue-600 bg-opacity-60 rounded-lg p-4 max-w-[80%]">
+                        <p class="text-white font-medium mb-1">您</p>
+                        <p class="text-gray-100">${message}</p>
+                    </div>
+                    <div class="w-10 h-10 rounded-full overflow-hidden ml-3 flex-shrink-0 bg-blue-700 flex items-center justify-center">
+                        <i class="fa fa-user text-white"></i>
+                    </div>
+                </div>
+            `;
+            chatContainer.insertAdjacentHTML('beforeend', userMessageHTML);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        // 添加陶行知先生的消息到聊天界面
+        function addTeacherMessage(message) {
+            const teacherMessageHTML = `
+                <div class="chat-message flex items-start">
+                    <div class="w-10 h-10 rounded-full overflow-hidden mr-3 flex-shrink-0">
+                        <img src="https://p3-doubao-search-sign.byteimg.com/labis/a7b954fb159684ced8edd5c3a86c5d78~tplv-be4g95zd3a-image.jpeg?lk3s=feb11e32&x-expires=1789972064&x-signature=APTK5p2aDKPtEZnC2GfXRNw%2FPS0%3D" alt="陶行知先生" class="w-full h-full object-cover">
+                    </div>
+                    <div class="bg-blue-900 bg-opacity-60 rounded-lg p-4 max-w-[80%]">
+                        <p class="text-white font-medium mb-1">陶行知先生</p>
+                        <p class="text-gray-200">${message}</p>
+                    </div>
+                </div>
+            `;
+            chatContainer.insertAdjacentHTML('beforeend', teacherMessageHTML);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        // 添加正在输入的指示器
+        function addTypingIndicator() {
+            const typingHTML = `
+                <div id="typing-indicator" class="chat-message flex items-start">
+                    <div class="w-10 h-10 rounded-full overflow-hidden mr-3 flex-shrink-0">
+                        <img src="https://p3-doubao-search-sign.byteimg.com/labis/a7b954fb159684ced8edd5c3a86c5d78~tplv-be4g95zd3a-image.jpeg?lk3s=feb11e32&x-expires=1789972064&x-signature=APTK5p2aDKPtEZnC2GfXRNw%2FPS0%3D" alt="陶行知先生" class="w-full h-full object-cover">
+                    </div>
+                    <div class="bg-blue-900 bg-opacity-60 rounded-lg p-4">
+                        <p class="text-white font-medium mb-1">陶行知先生</p>
+                        <div class="typing-indicator">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
+                    </div>
+                </div>
+            `;
+            chatContainer.insertAdjacentHTML('beforeend', typingHTML);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        // 移除正在输入的指示器
+        function removeTypingIndicator() {
+            const typingIndicator = document.getElementById('typing-indicator');
+            if (typingIndicator) {
+                typingIndicator.remove();
+            }
+        }
+
+        // 查找匹配的回答
+        function findAnswer(question) {
+            question = question.toLowerCase();
+            
+            // 检查是否有完全匹配的关键词
+            for (const qa of qaDatabase) {
+                for (const keyword of qa.keywords) {
+                    if (question.includes(keyword.toLowerCase())) {
+                        return qa.answer;
+                    }
+                }
+            }
+            
+            // 如果没有完全匹配，返回默认回答
+            return `
+                感谢您的提问。作为一名教育工作者，我认为教育是立国之本，是民族复兴的基础。
+
+                我的教育理念可以概括为"生活即教育"、"社会即学校"、"教学做合一"。我相信教育应该与生活相结合，应该在实践中学习，应该培养学生的创造力和实践能力。
+
+                作为师范生，我建议你：
+
+                1. 要"以教人者教己"，不断提高自己的专业素养和道德修养。
+
+                2. 要"在劳力上劳心"，注重理论与实践的结合。
+
+                3. 要"爱满天下"，热爱学生，热爱教育事业。
+
+                4. 要注重培养学生的道德品质，因为"道德是做人的根本"。
+
+                如果你有更具体的问题，我很乐意进一步探讨。
+            `;
+        }
+
+        // 处理用户输入
+        function handleUserInput() {
+            const message = userInput.value.trim();
+            if (message === '') return;
+            
+            // 添加用户消息
+            addUserMessage(message);
+            
+            // 清空输入框
+            userInput.value = '';
+            
+            // 添加正在输入的指示器
+            addTypingIndicator();
+            
+            // 模拟思考时间
+            setTimeout(() => {
+                // 移除正在输入的指示器
+                removeTypingIndicator();
+                
+                // 查找并添加回答
+                const answer = findAnswer(message);
+                addTeacherMessage(answer);
+            }, 1500);
+        }
+
+        // 发送按钮点击事件
+        sendButton.addEventListener('click', handleUserInput);
+
+        // 输入框回车事件
+        userInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                handleUserInput();
+            }
+        });
+
+        // 建议问题点击事件
+        suggestionButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                userInput.value = this.textContent.trim();
+                handleUserInput();
+            });
+        });
+    </script>
+
+</body></html>
